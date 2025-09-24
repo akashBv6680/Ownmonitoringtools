@@ -84,6 +84,3 @@ else:
     st.info("No monitoring data available yet. Run the main chatbot application to generate some logs.")
 
 
----
-This video on how to build a network monitoring web app with Python and SQLite can help provide a deeper understanding of the underlying principles. [Coding DIY - Build Network Monitoring Web Apps with Python, Bottle, SQLite](https://www.youtube.com/watch?v=4X29c-oXkKQ)
-http://googleusercontent.com/youtube_content/9
