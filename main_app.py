@@ -129,7 +129,6 @@ def retrieve_documents(query: str) -> str:
         if not results['documents'][0]:
             return "No relevant documents were found in the knowledge base. Please use another tool or ask a different question."
         
-        # We also want to know how many documents were retrieved for monitoring
         st.session_state.retrieved_docs_count = len(results['documents'][0])
         return "\n".join(results['documents'][0])
     except Exception as e:
@@ -171,6 +170,13 @@ def create_agent():
     together_llm = Together(
         together_api_key=TOGETHER_API_KEY,
         model="mistralai/Mistral-7B-Instruct-v0.2"
+    )
+    
+    # Corrected line: create the agent here
+    agent = create_react_agent(
+        llm=together_llm,
+        tools=tools,
+        prompt=custom_prompt
     )
     
     return AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -243,7 +249,6 @@ def handle_user_input():
                     response = agent_executor.invoke({"input": prompt, "chat_history": st.session_state.messages})
                     final_response = response.get('output', 'No response.')
                     
-                    # A more robust way to get tool used
                     if len(response['intermediate_steps']) > 0:
                         tool_used_trace = response['intermediate_steps'][0][0].tool
                         if "retrieve_documents" in tool_used_trace:
