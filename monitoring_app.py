@@ -5,6 +5,27 @@ from datetime import datetime
 import time
 
 # --- Database and Data Loading Functions ---
+def init_db():
+    """Initializes a SQLite database and the monitoring table."""
+    conn = sqlite3.connect('monitoring.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            query TEXT,
+            latency REAL,
+            tool_used TEXT,
+            retrieved_docs_count INTEGER,
+            error_status TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Call this function once at the beginning of your app
+init_db()
+
 def get_monitoring_data():
     """Fetches all data from the SQLite database."""
     try:
@@ -13,7 +34,8 @@ def get_monitoring_data():
         conn.close()
         return df
     except sqlite3.OperationalError:
-        st.error("Database file not found. Please run the main app first.")
+        # This will catch the error if the database file is not yet created
+        # and return an empty dataframe
         return pd.DataFrame()
 
 # --- Streamlit UI ---
@@ -24,11 +46,11 @@ st.markdown("This dashboard provides a live view of your chatbot's performance."
 
 # Button to refresh data
 if st.button("Refresh Data"):
-    st.cache_data.clear() # Clear the cache to get the latest data
+    st.cache_data.clear()
     st.experimental_rerun()
 
 # Load data with caching
-@st.cache_data(ttl=60) # Cache the data for 60 seconds
+@st.cache_data(ttl=60)
 def load_data():
     return get_monitoring_data()
 
