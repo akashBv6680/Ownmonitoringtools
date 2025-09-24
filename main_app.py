@@ -12,6 +12,18 @@ from typing import List
 import fitz
 import pandas as pd
 import sqlite3
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langchain import hub
+from langchain_community.llms import Together
+from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import SentenceTransformerEmbeddings
+from sentence_transformers import SentenceTransformer
+from bs4 import BeautifulSoup
 
 # --- Set Page Config (Must be the very first Streamlit command) ---
 st.set_page_config(layout="wide")
@@ -29,23 +41,6 @@ os.environ["LANGCHAIN_TRACING_V2"] = st.secrets["LANGCHAIN_TRACING_V2"]
 os.environ["LANGCHAIN_API_KEY"] = st.secrets["LANGCHAIN_API_KEY"]
 os.environ["LANGCHAIN_PROJECT"] = st.secrets["LANGCHAIN_PROJECT"]
 TOGETHER_API_KEY = st.secrets["TOGETHER_API_KEY"]
-
-# Now import other libraries
-import chromadb
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.tools import tool
-from langchain_core.messages import BaseMessage
-from langchain import hub
-from langchain_community.llms import Together
-from sentence_transformers import SentenceTransformer
-from langchain_community.tools import DuckDuckGoSearchRun
-from langchain_community.document_loaders import WebBaseLoader
-from bs4 import BeautifulSoup
-
 
 # --- Constants and Configuration ---
 COLLECTION_NAME = "agentic_rag_documents"
@@ -249,7 +244,7 @@ def handle_user_input():
                     response = agent_executor.invoke({"input": prompt, "chat_history": st.session_state.messages})
                     final_response = response.get('output', 'No response.')
                     
-                    if len(response['intermediate_steps']) > 0:
+                    if 'intermediate_steps' in response and len(response['intermediate_steps']) > 0:
                         tool_used_trace = response['intermediate_steps'][0][0].tool
                         if "retrieve_documents" in tool_used_trace:
                             tool_used = "RAG"
