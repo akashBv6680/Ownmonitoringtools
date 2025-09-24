@@ -26,6 +26,7 @@ def init_db():
 # Call this function once at the beginning of your app
 init_db()
 
+
 def get_monitoring_data():
     """Fetches all data from the SQLite database."""
     try:
@@ -37,6 +38,7 @@ def get_monitoring_data():
         # This will catch the error if the database file is not yet created
         # and return an empty dataframe
         return pd.DataFrame()
+
 
 # --- Streamlit UI ---
 st.set_page_config(layout="wide")
@@ -80,3 +82,8 @@ if not monitoring_df.empty:
 
 else:
     st.info("No monitoring data available yet. Run the main chatbot application to generate some logs.")
+
+
+---
+This video on how to build a network monitoring web app with Python and SQLite can help provide a deeper understanding of the underlying principles. [Coding DIY - Build Network Monitoring Web Apps with Python, Bottle, SQLite](https://www.youtube.com/watch?v=4X29c-oXkKQ)
+http://googleusercontent.com/youtube_content/9
