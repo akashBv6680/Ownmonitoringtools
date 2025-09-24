@@ -12,18 +12,20 @@ from typing import List
 import fitz
 import pandas as pd
 import sqlite3
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.tools import tool
-from langchain import hub
-from langchain_community.llms import Together
-from langchain_community.tools import DuckDuckGoSearchRun
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-from sentence_transformers import SentenceTransformer
-from bs4 import BeautifulSoup
+import chromadb # This import needs to be at the top
+from langchain_community.vectorstores import Chroma # This import needs to be at the top
+from langchain_community.embeddings import SentenceTransformerEmbeddings # This import needs to be at the top
+from langchain_text_splitters import RecursiveCharacterTextSplitter # This import needs to be at the top
+from langchain.agents import create_react_agent, AgentExecutor # This import needs to be at the top
+from langchain_core.prompts import ChatPromptTemplate # This import needs to be at the top
+from langchain_core.tools import tool # This import needs to be at the top
+from langchain import hub # This import needs to be at the top
+from langchain_community.llms import Together # This import needs to be at the top
+from sentence_transformers import SentenceTransformer # This import needs to be at the top
+from langchain_community.tools import DuckDuckGoSearchRun # This import needs to be at the top
+from langchain_community.document_loaders import WebBaseLoader # This import needs to be at the top
+from bs4 import BeautifulSoup # This import needs to be at the top
+from langchain_core.messages import BaseMessage # This import needs to be at the top
 
 # --- Set Page Config (Must be the very first Streamlit command) ---
 st.set_page_config(layout="wide")
