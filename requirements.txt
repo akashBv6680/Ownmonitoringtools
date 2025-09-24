@@ -1,0 +1,12 @@
+streamlit
+chromadb
+sentence-transformers
+langchain-text-splitters
+requests
+torch
+pysqlite3-binary
+PyMuPDF
+langchain
+langsmith
+langchain-community
+beautifulsoup4
