@@ -11,7 +11,7 @@ from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.callbacks.manager import CallbackManager
-from langchain_community.callbacks import StreamingStdOutCallbackHandler
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from datetime import datetime
 from pydrive2.auth import GoogleAuth
