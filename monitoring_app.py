@@ -10,18 +10,36 @@ from pydrive2.drive import GoogleDrive
 # This is the correct way to get the secrets from the Streamlit Cloud environment
 DRIVE_FOLDER_ID = "12QDMyXUbPJRlMsii2IcpdHgyGKpyIlcZ" # Replace with your actual Google Drive folder ID
 
+
+
 def authenticate_gdrive():
     """Authenticates with Google Drive using secrets.toml."""
     gauth = GoogleAuth()
+    
+    # Create the credentials JSON object from the individual secrets
+    client_secrets = {
+        "installed": {
+            "client_id": st.secrets["google_drive"]["client_id"],
+            "project_id": st.secrets["google_drive"]["project_id"],
+            "auth_uri": st.secrets["google_drive"]["auth_uri"],
+            "token_uri": st.secrets["google_drive"]["token_uri"],
+            "auth_provider_x509_cert_url": st.secrets["google_drive"]["auth_provider_x509_cert_url"],
+            "client_secret": st.secrets["google_drive"]["client_secret"],
+            "redirect_uris": [st.secrets["google_drive"]["redirect_uris"]]
+        }
+    }
+
+    gauth.LoadClientSecretsFromDict(client_secrets)
     gauth.LoadCredentialsFile("mycreds.txt")
+    
     if gauth.credentials is None:
-        gauth.LoadClientSecretsFromDict(st.secrets["google_drive"]["client_secrets"])
         gauth.Authorize()
         gauth.SaveCredentialsFile("mycreds.txt")
     elif gauth.access_token_expired:
         gauth.Refresh()
     else:
         gauth.Authorize()
+        
     return GoogleDrive(gauth)
 
 def download_db_from_gdrive():
@@ -77,6 +95,3 @@ if not df.empty:
     # ... (the rest of your dashboard code for visualizations) ...
 else:
     st.warning("No monitoring data available yet. Run the main chatbot application to generate some logs.")
-    
-A video explaining how to integrate Python with Google Drive can be found here: [Upload to Google Drive with Python](https://www.youtube.com/watch?v=tamT_iGoZDQ).
-http://googleusercontent.com/youtube_content/3
