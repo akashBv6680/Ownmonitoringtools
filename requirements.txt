@@ -1,13 +1,17 @@
 streamlit
+pysqlite3-binary
+pydrive2
+langchain
+langchain-community
+langchain-core
+PyMuPDF
 chromadb
+pandas
+plotly
 sentence-transformers
 langchain-text-splitters
+beautifulsoup4
+duckduckgo-search
 requests
 torch
-pysqlite3-binary
-PyMuPDF
-langchain
 langsmith
-langchain-community
-beautifulsoup4
-duckduckgo-search  # Add this line
