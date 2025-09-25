@@ -7,7 +7,7 @@ from datetime import datetime
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from langchain_core.callbacks.manager import CallbackManager
-from langchain_community.callbacks import StreamingStdOutCallbackHandler
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 # This is the correct way to get the secrets from the Streamlit Cloud environment
 DRIVE_FOLDER_ID = "12QDMyXUbPJRlMsii2IcpdHgyGKpyIlcZ" # Replace with your actual Google Drive folder ID
