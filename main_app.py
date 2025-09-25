@@ -150,7 +150,7 @@ init_db()
 
 # This is where you would load your PDF
 # Make sure your PDF is available in the app's directory
-pdf_path = "your_document.pdf"
+pdf_path = "datascience knowledge.pdf"
 
 if os.path.exists(pdf_path):
     docs = load_and_split_pdf(pdf_path)
