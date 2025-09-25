@@ -1,86 +1,82 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import os
+import plotly.express as px
 from datetime import datetime
-import time
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 
-# --- Database and Data Loading Functions ---
-def init_db():
-    """Initializes a SQLite database and the monitoring table."""
-    conn = sqlite3.connect('monitoring.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS chat_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
-            query TEXT,
-            latency REAL,
-            tool_used TEXT,
-            retrieved_docs_count INTEGER,
-            error_status TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+# This is the correct way to get the secrets from the Streamlit Cloud environment
+DRIVE_FOLDER_ID = "12QDMyXUbPJRlMsii2IcpdHgyGKpyIlcZ" # Replace with your actual Google Drive folder ID
 
-# Call this function once at the beginning of your app
-init_db()
+def authenticate_gdrive():
+    """Authenticates with Google Drive using secrets.toml."""
+    gauth = GoogleAuth()
+    gauth.LoadCredentialsFile("mycreds.txt")
+    if gauth.credentials is None:
+        gauth.LoadClientSecretsFromDict(st.secrets["google_drive"]["client_secrets"])
+        gauth.Authorize()
+        gauth.SaveCredentialsFile("mycreds.txt")
+    elif gauth.access_token_expired:
+        gauth.Refresh()
+    else:
+        gauth.Authorize()
+    return GoogleDrive(gauth)
 
+def download_db_from_gdrive():
+    """Downloads monitoring.db from Google Drive."""
+    try:
+        drive = authenticate_gdrive()
+        file_list = drive.ListFile({'q': f"'{DRIVE_FOLDER_ID}' in parents and trashed=false"}).GetList()
+
+        for file in file_list:
+            if file['title'] == 'monitoring.db':
+                gfile = drive.CreateFile({'id': file['id']})
+                gfile.GetContentFile('monitoring.db')
+                st.toast("Database downloaded successfully!", icon="⬇️")
+                return
+        st.warning("monitoring.db not found in cloud storage.")
+    except Exception as e:
+        st.error(f"Error downloading database from Google Drive: {e}")
+
+# Call this function at the very beginning of your script,
+# before you load any data from the database.
+download_db_from_gdrive()
 
 def get_monitoring_data():
-    """Fetches all data from the SQLite database."""
+    """Fetches all data from the local SQLite database."""
     try:
         conn = sqlite3.connect('monitoring.db')
         df = pd.read_sql_query("SELECT * FROM chat_logs", conn)
         conn.close()
         return df
     except sqlite3.OperationalError:
-        # This will catch the error if the database file is not yet created
-        # and return an empty dataframe
         return pd.DataFrame()
 
-
-# --- Streamlit UI ---
-st.set_page_config(layout="wide")
-
+# Main function to display the dashboard
 st.title("RAG Chatbot Monitoring Dashboard")
-st.markdown("This dashboard provides a live view of your chatbot's performance.")
 
-# Button to refresh data
-if st.button("Refresh Data"):
-    st.cache_data.clear()
-    st.experimental_rerun()
+df = get_monitoring_data()
 
-# Load data with caching
-@st.cache_data(ttl=60)
-def load_data():
-    return get_monitoring_data()
+if not df.empty:
+    st.subheader("Recent User Queries")
+    st.dataframe(df.tail(10))
 
-monitoring_df = load_data()
+    # Basic Metrics
+    st.subheader("Chatbot Metrics")
+    total_interactions = len(df)
+    unique_users = df['user_query'].nunique() # This is a simple proxy
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Total Interactions", value=total_interactions)
+    with col2:
+        st.metric(label="Unique Queries", value=unique_users)
 
-if not monitoring_df.empty:
-    # Convert timestamp to datetime for proper sorting and plotting
-    monitoring_df['timestamp'] = pd.to_datetime(monitoring_df['timestamp'])
-
-    # Metrics at the top for a quick overview
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Average Latency", f"{monitoring_df['latency'].mean():.2f}s")
-    col2.metric("Total Queries", len(monitoring_df))
-    col3.metric("Total Errors", len(monitoring_df[monitoring_df['error_status'] == 'Yes']))
-
-    st.markdown("---")
-
-    st.subheader("Latency Over Time")
-    st.line_chart(monitoring_df.set_index('timestamp')['latency'])
-
-    st.subheader("Tool Usage")
-    tool_counts = monitoring_df['tool_used'].value_counts()
-    st.bar_chart(tool_counts)
-
-    st.subheader("Detailed Logs")
-    st.dataframe(monitoring_df.sort_values(by='timestamp', ascending=False), use_container_width=True)
-
+    # ... (the rest of your dashboard code for visualizations) ...
 else:
-    st.info("No monitoring data available yet. Run the main chatbot application to generate some logs.")
-
-
+    st.warning("No monitoring data available yet. Run the main chatbot application to generate some logs.")
+    
+A video explaining how to integrate Python with Google Drive can be found here: [Upload to Google Drive with Python](https://www.youtube.com/watch?v=tamT_iGoZDQ).
+http://googleusercontent.com/youtube_content/3
