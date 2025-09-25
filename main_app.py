@@ -10,8 +10,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_core.callbacks.manager import CallbackManager
-from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_core.callbacks import CallbackManager
+from langchain_community.callbacks import StreamingStdOutCallbackHandler
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from datetime import datetime
 from pydrive2.auth import GoogleAuth
@@ -39,11 +39,12 @@ def authenticate_gdrive():
         }
     }
 
-    gauth.LoadClientSecretsFromDict(client_secrets)
+    # Set the client configuration in the GoogleAuth settings
+    gauth.settings["client_config"] = client_secrets["installed"]
     gauth.LoadCredentialsFile("mycreds.txt")
-    
+
     if gauth.credentials is None:
-        gauth.Authorize()
+        gauth.LocalWebserverAuth()
         gauth.SaveCredentialsFile("mycreds.txt")
     elif gauth.access_token_expired:
         gauth.Refresh()
@@ -101,18 +102,70 @@ def log_interaction(query, response):
         conn.close()
     except Exception as e:
         st.error(f"Error logging interaction: {e}")
+        
+def load_and_split_pdf(pdf_path):
+    """Loads a PDF and splits it into text chunks."""
+    loader = PyMuPDFLoader(pdf_path)
+    documents = loader.load()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=20)
+    docs = text_splitter.split_documents(documents)
+    return docs
 
-# ... (The rest of your code for Ollama, ChromaDB, etc.) ...
-# Place these functions at the beginning of your script
+def setup_chroma_db(docs):
+    """Initializes and returns a ChromaDB vector store."""
+    embeddings = OllamaEmbeddings(model="llama3")
+    vectorstore = Chroma.from_documents(docs, embeddings)
+    return vectorstore
 
-# Inside your main application loop:
-# In your handle_user_input() function, after saving the data to the database:
-# ...
-conn = sqlite3.connect('monitoring.db')
-cursor = conn.cursor()
-# ... (your INSERT statement here)
-conn.commit()
-conn.close()
+def setup_qa_chain(vectorstore):
+    """Initializes and returns a RetrievalQA chain."""
+    llm = Ollama(model="llama3", callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]))
+    qa_chain = RetrievalQA.from_chain_type(
+        llm,
+        retriever=vectorstore.as_retriever(),
+        chain_type="stuff"
+    )
+    return qa_chain
 
-# Call the upload function right after closing the connection
-upload_db_to_gdrive()
+def handle_user_input(qa_chain):
+    """Handles the user's chat input and provides a response."""
+    user_query = st.text_input("Ask a question about the PDF:", key="user_query")
+    if user_query:
+        try:
+            with st.spinner("Getting response..."):
+                response = qa_chain.run(user_query)
+                st.session_state.history.append({"query": user_query, "response": response})
+                log_interaction(user_query, response)
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+
+# Main application logic
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+st.title("RAG Chatbot with Ollama")
+
+# Initialize database on app start
+init_db()
+
+# This is where you would load your PDF
+# Make sure your PDF is available in the app's directory
+pdf_path = "your_document.pdf"
+
+if os.path.exists(pdf_path):
+    docs = load_and_split_pdf(pdf_path)
+    vectorstore = setup_chroma_db(docs)
+    qa_chain = setup_qa_chain(vectorstore)
+    handle_user_input(qa_chain)
+else:
+    st.warning(f"PDF file '{pdf_path}' not found. Please upload it to your app's directory.")
+    
+# Display chat history
+if st.session_state.history:
+    st.subheader("Chat History")
+    for chat in reversed(st.session_state.history):
+        st.write(f"**You:** {chat['query']}")
+        st.write(f"**Bot:** {chat['response']}")
+        
+# Call the upload function right after closing the connection in your log_interaction function
+# to ensure it runs after a user message.
